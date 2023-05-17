@@ -1,0 +1,93 @@
+IssuesPage.js
+
+
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
+
+const IssuesPage = () => {
+  const { owner, repo } = useParams();
+  const [issues, setIssues] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [issuesPerPage] = useState(10);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/issues?page=${currentPage}&per_page=${issuesPerPage}`
+        );
+        const data = await response.json();
+        setIssues(data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchData();
+  }, [owner, repo, currentPage, issuesPerPage]);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const renderPagination = () => {
+    const totalPages = Math.ceil(issues.length / issuesPerPage);
+
+    if (totalPages <= 1) {
+      return null; // No need to render pagination if there is only one page
+    }
+
+    const pageNumbers = [];
+
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="pagination">
+        <button
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </button>
+        {pageNumbers.map((pageNumber) => (
+          <button
+            key={pageNumber}
+            onClick={() => handlePageChange(pageNumber)}
+            className={currentPage === pageNumber ? 'active' : ''}
+          >
+            {pageNumber}
+          </button>
+        ))}
+        <button
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="issues-page">
+      <h1>GitHub Issues</h1>
+      <ul>
+        {Array.isArray(issues) && issues.length > 0 ? (
+          issues.map((issue) => (
+            <li key={issue.id}>
+              <Link to={`/${owner}/${repo}/issues/${issue.number}`}>{issue.title}</Link>
+              <p>{issue.body}</p>
+            </li>
+          ))
+        ) : (
+          <p>No issues found</p>
+        )}
+      </ul>
+      {renderPagination()}
+    </div>
+  );
+};
+
+export default IssuesPage;
